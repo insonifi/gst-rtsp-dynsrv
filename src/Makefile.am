@@ -3,12 +3,12 @@ bin_PROGRAMS = rtsp-dynsrv
 
 # list of source files
 # the prefix is the name of the binary
-gst_app_SOURCES = main.c
+rtsp_dynsrv_SOURCES = main.c
 
 # list of headers we're not going to install
 noinst_HEADERS =
 
 # our CFLAGS and LDFLAGS used for compiling and linking
 # make sure you prefix these with the name of your binary
-gst_app_CFLAGS = $(GST_CFLAGS)
-gst_app_LDFLAGS = $(GST_LIBS)
+rtsp_dynsrv_CFLAGS = $(GST_CFLAGS)
+rtsp_dynsrv_LDFLAGS = $(GST_LIBS)
