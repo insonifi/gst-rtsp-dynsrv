@@ -109,6 +109,7 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
   {
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, launch);
+    gst_rtsp_media_factory_set_shared (factory, TRUE);
     if (force_mcast || (query && g_str_has_prefix (query, MCAST)))
     {
       g_print ("multicast ");
