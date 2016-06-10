@@ -51,6 +51,7 @@
 #define DEFAULT_SEP "`"
 #define DEFAULT_FMCAST FALSE
 #define MCAST "mcast"
+#define QSIGN "?"
 
 static char *port = (char *) DEFAULT_RTSP_PORT;
 static char *sep = (char *) DEFAULT_SEP;
@@ -69,15 +70,41 @@ static GOptionEntry entries[] = {
 static gchar *
 path_to_launch (const gchar * path)
 {
-  gchar *i;
   gchar *result = NULL;
-  result = g_strdup (path + 1);
-  for (i = result; *i; i++) {
-    if (*i == *sep) {
-      *i = ' ';
-    }
-  }
+  gchar new_delim = ' ';
+  
+  result = g_strdelimit (g_strdup (path + 1), sep, new_delim);
+  
   return result;
+}
+
+static void
+media_constructed (GstRTSPMediaFactory * factory, GstRTSPMedia * media)
+{
+  guint i, n_streams;
+
+  n_streams = gst_rtsp_media_n_streams (media);
+
+  for (i = 0; i < n_streams; i++) {
+    GstRTSPAddressPool *pool;
+    GstRTSPStream *stream;
+    gchar *min, *max;
+
+    stream = gst_rtsp_media_get_stream (media, i);
+
+    /* make a new address pool */
+    pool = gst_rtsp_address_pool_new ();
+
+    min = g_strdup_printf ("224.3.0.%d", (2 * i) + 1);
+    max = g_strdup_printf ("224.3.0.%d", (2 * i) + 2);
+    gst_rtsp_address_pool_add_range (pool, min, max,
+                                      5000 + (10 * i), 5010 + (10 * i), 1);
+    g_free (min);
+    g_free (max);
+
+    gst_rtsp_stream_set_address_pool (stream, pool);
+    g_object_unref (pool);
+  }
 }
 
 static void
@@ -87,10 +114,8 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
   GstRTSPClientClass *klass;
   GstRTSPMountPoints *mounts;
   GstRTSPMediaFactory *factory;
-  GstRTSPAddressPool *pool;
   GstRTSPUrl *uri;
   gchar *path;
-  gchar *query;
   gchar *launch;
 
   uri = ctx->uri;
@@ -101,7 +126,6 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
   klass = GST_RTSP_CLIENT_GET_CLASS (client);
   path = klass->make_path_from_uri (client, uri);
 
-  query = uri->query;
   launch = path_to_launch (path);
   mounts = gst_rtsp_server_get_mount_points (server);
   factory = gst_rtsp_mount_points_match (mounts, path, NULL);
@@ -110,21 +134,17 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, launch);
     gst_rtsp_media_factory_set_shared (factory, TRUE);
-    if (force_mcast || (query && g_str_has_prefix (query, MCAST)))
+    if (force_mcast || g_str_has_suffix (path, MCAST))
     {
       g_print ("multicast ");
-      /* make a new address pool */
-      pool = gst_rtsp_address_pool_new ();
-      gst_rtsp_address_pool_add_range (pool,
-          "224.3.0.0", "224.3.0.10", 5000, 5010, 16);
-      gst_rtsp_media_factory_set_address_pool (factory, pool);
+      g_signal_connect (factory, "media-constructed", (GCallback)
+                                                      media_constructed, NULL);
       if (force_mcast)
       {
        /* only allow multicast */
 	gst_rtsp_media_factory_set_protocols (factory,
       						GST_RTSP_LOWER_TRANS_UDP_MCAST);
       }
-      g_object_unref (pool);
     }
     gst_rtsp_mount_points_add_factory (mounts, path, factory);
     g_print ("new factory: %s\n", launch);
@@ -134,6 +154,8 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
     g_object_unref (factory);
   }
   g_object_unref (mounts);
+  g_free (path);
+  g_free (launch);
 }
 
 static void
