@@ -139,12 +139,9 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
       g_print ("multicast ");
       g_signal_connect (factory, "media-constructed", (GCallback)
                                                       media_constructed, NULL);
-      if (force_mcast)
-      {
-       /* only allow multicast */
-	gst_rtsp_media_factory_set_protocols (factory,
-      						GST_RTSP_LOWER_TRANS_UDP_MCAST);
-      }
+      /* only allow multicast */
+      gst_rtsp_media_factory_set_protocols (factory,
+                                            GST_RTSP_LOWER_TRANS_UDP_MCAST);
     }
     gst_rtsp_mount_points_add_factory (mounts, path, factory);
     g_print ("new factory: %s\n", launch);
