@@ -49,12 +49,14 @@
 
 #define DEFAULT_RTSP_PORT "8554"
 #define DEFAULT_SEP "`"
+#define DEFAULT_MCAST_TTL 1
 #define DEFAULT_FMCAST FALSE
 #define MCAST "mcast"
 #define QSIGN "?"
 
 static char *port = (char *) DEFAULT_RTSP_PORT;
 static char *sep = (char *) DEFAULT_SEP;
+static guint8 mttl = (guint8) DEFAULT_MCAST_TTL;
 static gboolean *force_mcast = (gboolean *) DEFAULT_FMCAST;
 static GOptionEntry entries[] = {
   {"port", 'p', 0, G_OPTION_ARG_STRING, &port,
@@ -64,6 +66,8 @@ static GOptionEntry entries[] = {
         "in launch strings (default: " DEFAULT_SEP ")", "SEP"},
   {"force-mcast", 'm', 0, G_OPTION_ARG_NONE, &force_mcast,
       "Force streams to use multicast", NULL},
+  {"mcast-ttl", 't', 0, G_OPTION_ARG_INT, &mttl,
+      "Multicast TTL", NULL},
   {NULL}
 };
 
@@ -98,7 +102,7 @@ media_constructed (GstRTSPMediaFactory * factory, GstRTSPMedia * media)
     min = g_strdup_printf ("224.3.0.%d", (2 * i) + 1);
     max = g_strdup_printf ("224.3.0.%d", (2 * i) + 2);
     gst_rtsp_address_pool_add_range (pool, min, max,
-                                      5000 + (10 * i), 5010 + (10 * i), 1);
+                                      5000 + (10 * i), 5010 + (10 * i), mttl);
     g_free (min);
     g_free (max);
 
