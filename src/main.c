@@ -138,11 +138,13 @@ handle_client (GstRTSPClient * client, GstRTSPContext * ctx,
     factory = gst_rtsp_media_factory_new ();
     gst_rtsp_media_factory_set_launch (factory, launch);
     gst_rtsp_media_factory_set_shared (factory, TRUE);
+
+    g_signal_connect (factory, "media-constructed", (GCallback)
+                                                    media_constructed, NULL);
+
     if (force_mcast || g_str_has_suffix (path, MCAST))
     {
-      g_print ("multicast ");
-      g_signal_connect (factory, "media-constructed", (GCallback)
-                                                      media_constructed, NULL);
+      g_print ("multicast only ");
       /* only allow multicast */
       gst_rtsp_media_factory_set_protocols (factory,
                                             GST_RTSP_LOWER_TRANS_UDP_MCAST);
